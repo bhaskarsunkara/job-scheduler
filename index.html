@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Sequencing - Greedy</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:800px;margin:auto;padding:16px;background:#f5f7fa;color:#222}
+h1{font-size:1.4rem}
+.card{background:#fff;padding:16px;border-radius:10px;margin-bottom:16px;box-shadow:0 1px 4px #0002}
+input,button{padding:8px;margin:4px 4px 4px 0;border-radius:6px;border:1px solid #ccc;font-size:1rem}
+input{width:28%}
+button{background:#2563eb;color:#fff;border:0}
+button.alt{background:#64748b}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+td,th{border-bottom:1px solid #ddd;padding:6px;text-align:center}
+.slots{display:flex;flex-wrap:wrap;gap:6px}
+.slot{min-width:70px;padding:8px;border-radius:6px;background:#e2e8f0;text-align:center}
+.slot.filled{background:#22c55e;color:#fff}
+.log{font-size:.95rem;line-height:1.7}
+</style>
+</head>
+<body>
+<h1>Job Sequencing with Deadlines (Greedy)</h1>
+<div class="card">
+  <input id="jid" placeholder="Job ID">
+  <input id="jdl" type="number" min="1" placeholder="Deadline">
+  <input id="jpf" type="number" min="0" placeholder="Profit">
+  <br>
+  <button onclick="addJob()">Add</button>
+  <button class="alt" onclick="sample()">Sample</button>
+  <button class="alt" onclick="jobs=[];show()">Clear</button>
+  <table id="tbl"></table>
+</div>
+<button onclick="run()">Run Greedy Algorithm</button>
+<div class="card" id="out" style="margin-top:16px;display:none">
+  <h3>Time slots</h3>
+  <div class="slots" id="slots"></div>
+  <p id="sum"></p>
+  <h3>Step by step</h3>
+  <div class="log" id="log"></div>
+  <p><small>Time complexity: O(n log n) sorting + O(n·d) slot search</small></p>
+</div>
+<script>
+let jobs=[];
+const $=id=>document.getElementById(id);
+function show(){
+  $('tbl').innerHTML='<tr><th>ID</th><th>Deadline</th><th>Profit</th></tr>'+
+    jobs.map(j=>`<tr><td>${j.id}</td><td>${j.dl}</td><td>${j.pf}</td></tr>`).join('');
+}
+function addJob(){
+  const id=$('jid').value.trim(), dl=parseInt($('jdl').value), pf=parseInt($('jpf').value);
+  if(!id||!(dl>=1)||isNaN(pf)) return alert('Enter valid ID, deadline (>=1) and profit');
+  jobs.push({id,dl,pf});
+  $('jid').value=$('jdl').value=$('jpf').value='';
+  show();
+}
+function sample(){
+  jobs=[{id:'J1',dl:2,pf:100},{id:'J2',dl:1,pf:19},{id:'J3',dl:2,pf:27},{id:'J4',dl:1,pf:25},{id:'J5',dl:3,pf:15}];
+  show();
+}
+function run(){
+  if(!jobs.length) return alert('Add some jobs first');
+  const sorted=[...jobs].sort((a,b)=>b.pf-a.pf);
+  const maxD=Math.max(...jobs.map(j=>j.dl));
+  const slot=Array(maxD+1).fill(null);
+  let total=0;
+  const log=['Sorted by profit: '+sorted.map(j=>j.id).join(', ')];
+  for(const j of sorted){
+    let placed=false;
+    for(let t=Math.min(maxD,j.dl);t>=1;t--){
+      if(!slot[t]){
+        slot[t]=j; total+=j.pf; placed=true;
+        log.push(`✅ ${j.id} (profit ${j.pf}, deadline ${j.dl}) → slot ${t}`);
+        break;
+      }
+    }
+    if(!placed) log.push(`❌ ${j.id} (profit ${j.pf}) rejected: no free slot up to ${j.dl}`);
+  }
+  let html='';
+  for(let t=1;t<=maxD;t++){
+    html+=`<div class="slot ${slot[t]?'filled':''}">Slot ${t}<br><b>${slot[t]?slot[t].id:'-'}</b></div>`;
+  }
+  $('slots').innerHTML=html;
+  $('sum').innerHTML=`<b>Total profit: ${total}</b>`;
+  $('log').innerHTML=log.join('<br>');
+  $('out').style.display='block';
+}
+</script>
+</body>
+</html>
