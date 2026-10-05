@@ -1,91 +1,196 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Job Sequencing - Greedy</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Job Scheduler · Greedy Job Sequencing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-body{font-family:system-ui,sans-serif;max-width:800px;margin:auto;padding:16px;background:#f5f7fa;color:#222}
-h1{font-size:1.4rem}
-.card{background:#fff;padding:16px;border-radius:10px;margin-bottom:16px;box-shadow:0 1px 4px #0002}
-input,button{padding:8px;margin:4px 4px 4px 0;border-radius:6px;border:1px solid #ccc;font-size:1rem}
-input{width:28%}
-button{background:#2563eb;color:#fff;border:0}
-button.alt{background:#64748b}
-table{width:100%;border-collapse:collapse;margin-top:8px}
-td,th{border-bottom:1px solid #ddd;padding:6px;text-align:center}
-.slots{display:flex;flex-wrap:wrap;gap:6px}
-.slot{min-width:70px;padding:8px;border-radius:6px;background:#e2e8f0;text-align:center}
-.slot.filled{background:#22c55e;color:#fff}
-.log{font-size:.95rem;line-height:1.7}
+:root{--bg:#0B0F1A;--s1:#121829;--s2:#1A2238;--bd:#263150;--tx:#E8ECF8;--mu:#8A94B2;--pr:#6366F1;--prS:#1B1F4B;--prB:#2E3180;--ok:#22C55E;--okS:#0E2A1C;--okB:#1E6B3E;--wr:#F59E0B;--wrS:#2B2008;--wrB:#6B4A0E}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--tx);font:400 14px/1.4 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:440px;margin:0 auto;padding:24px 20px 40px;display:grid;gap:16px}
+@media(min-width:920px){.wrap{max-width:960px;grid-template-columns:420px 1fr;align-items:start;gap:24px;padding-top:48px}.left{position:sticky;top:24px}.head{grid-column:1/-1}}
+.left,.right{display:grid;gap:16px;align-content:start}
+h1{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.sub{color:var(--mu);font-size:13px;margin-top:6px}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:20px;padding:18px;display:grid;gap:14px}
+.card h2,.sec{font-size:15px;font-weight:600}
+.row{display:flex;gap:10px;align-items:center}
+.between{justify-content:space-between}
+.fields{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px}
+label{display:grid;gap:6px;font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--mu);text-transform:uppercase}
+input{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:12px;color:var(--tx);font:500 14px Inter,sans-serif;padding:12px;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus{border-color:var(--pr);box-shadow:0 0 0 3px rgba(99,102,241,.25)}
+button{font:600 14px Inter,sans-serif;border:1px solid var(--bd);background:var(--s2);color:var(--tx);border-radius:12px;padding:13px 18px;cursor:pointer;transition:transform .1s,filter .15s}
+button:active{transform:scale(.97)}button:hover{filter:brightness(1.15)}
+.pri{background:var(--pr);border-color:var(--pr);color:#fff}
+.grow{flex:1}
+.cta{width:100%;padding:17px;border-radius:14px;font-size:16px;box-shadow:0 8px 24px rgba(99,102,241,.35)}
+.err{color:var(--wr);font-size:12px;min-height:16px}
+.job{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--s1);border:1px solid var(--bd);border-radius:16px}
+.av{width:40px;height:40px;border-radius:12px;background:var(--prS);border:1px solid var(--prB);color:#A5B4FC;font-weight:700;font-size:16px;display:grid;place-items:center;flex:none}
+.info{flex:1;min-width:0}.info b{display:block;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.info span{color:var(--mu);font-size:12px}
+.pill{padding:5px 10px;border-radius:999px;background:var(--okS);border:1px solid var(--okB);color:var(--ok);font-weight:600;font-size:12px}
+.x{padding:6px 9px;border-radius:10px;color:var(--mu);background:transparent;border:0;font-size:16px}
+.empty{color:var(--mu);text-align:center;padding:18px;border:1px dashed var(--bd);border-radius:16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:14px}
+.stat small{display:block;font-size:9px;font-weight:600;letter-spacing:.08em;color:var(--mu);text-transform:uppercase;margin-bottom:4px}
+.stat b{font-size:22px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.slot{height:58px;border-radius:12px;background:var(--s2);border:1px solid var(--bd);display:grid;place-content:center;text-align:center;gap:3px;color:var(--mu);transition:all .3s}
+.slot small{font-size:9px;font-weight:500;text-transform:uppercase}.slot b{font-size:11px;font-weight:600;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot.on{background:var(--okS);border-color:var(--okB);color:var(--ok);animation:pop .35s ease both}
+.slot.on small{color:#86EFAC}
+@keyframes pop{from{transform:scale(.88);opacity:0}to{transform:none;opacity:1}}
+.legend{font-size:11px;color:var(--mu);font-weight:500}
+.note{display:flex;gap:12px;padding:16px;background:var(--prS);border:1px solid var(--prB);border-radius:16px}
+.note i{flex:none;width:32px;height:32px;border-radius:10px;background:var(--pr);color:#fff;font-style:normal;font-weight:700;display:grid;place-items:center}
+.note b{font-size:13px;font-weight:600;display:block;margin-bottom:4px}.note span{color:var(--mu);font-size:12px}
+.ord{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--s1);border:1px solid var(--bd);border-radius:14px}
+.ord em{font-style:normal;padding:5px 10px;border-radius:8px;background:var(--s2);color:#A5B4FC;font-size:11px;font-weight:600}
+.ord b{flex:1;font-weight:600}.ord strong{color:var(--ok);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;gap:6px;padding:5px 10px;border-radius:999px;background:var(--s2);border:1px solid var(--bd);font-size:11px;color:var(--mu);font-weight:500}.chip b{color:var(--ok);font-weight:600}
+.step{display:flex;gap:14px;padding:16px;background:var(--s1);border:1px solid var(--bd);border-radius:18px;animation:pop .35s ease both}
+.badge{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--okS);border:1px solid var(--okB);color:var(--ok)}
+.step.skip .badge{background:var(--wrS);border-color:var(--wrB);color:var(--wr)}
+.step b{display:block;font-size:15px;font-weight:600;margin-bottom:4px}.step p{color:var(--mu);font-size:12px;margin-bottom:10px}
+.strip{display:flex;flex-wrap:wrap;gap:5px}
+.strip s{text-decoration:none;width:20px;height:20px;border-radius:5px;background:var(--s2);border:1px solid var(--bd);color:var(--mu);font-size:8px;font-weight:500;display:grid;place-items:center}
+.strip s.was{background:var(--okB);border-color:var(--okB);color:#BBF7D0}
+.strip s.now{background:var(--ok);border-color:var(--ok);color:#04210F}
+.total{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;background:var(--okS);border:1px solid var(--okB);border-radius:18px;color:#86EFAC;font-weight:500}
+.total b{font-size:28px;color:var(--ok);font-weight:700}
+.hide{display:none!important}
 </style>
 </head>
 <body>
-<h1>Job Sequencing with Deadlines (Greedy)</h1>
-<div class="card">
-  <input id="jid" placeholder="Job ID">
-  <input id="jdl" type="number" min="1" placeholder="Deadline">
-  <input id="jpf" type="number" min="0" placeholder="Profit">
-  <br>
-  <button onclick="addJob()">Add</button>
-  <button class="alt" onclick="sample()">Sample</button>
-  <button class="alt" onclick="jobs=[];show()">Clear</button>
-  <table id="tbl"></table>
-</div>
-<button onclick="run()">Run Greedy Algorithm</button>
-<div class="card" id="out" style="margin-top:16px;display:none">
-  <h3>Time slots</h3>
-  <div class="slots" id="slots"></div>
-  <p id="sum"></p>
-  <h3>Step by step</h3>
-  <div class="log" id="log"></div>
-  <p><small>Time complexity: O(n log n) sorting + O(n·d) slot search</small></p>
-</div>
+<main class="wrap">
+  <header class="head">
+    <h1>Job Scheduler</h1>
+    <p class="sub">Greedy job sequencing · maximise profit</p>
+  </header>
+
+  <section class="left">
+    <div class="card">
+      <h2>Add a job</h2>
+      <div class="fields">
+        <label>ID<input id="fid" placeholder="e.g. Vinay" maxlength="20" autocomplete="off"></label>
+        <label>Deadline<input id="fd" type="number" inputmode="numeric" min="1" max="30" placeholder="10"></label>
+        <label>Profit<input id="fp" type="number" inputmode="numeric" min="0" placeholder="100"></label>
+      </div>
+      <div class="err" id="err"></div>
+      <div class="row">
+        <button class="pri grow" id="add">Add job</button>
+        <button id="sample">Sample</button>
+        <button id="clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="row between"><span class="sec">Job queue</span><span class="legend" id="count"></span></div>
+    <div id="list" style="display:grid;gap:10px"></div>
+    <button class="pri cta" id="run">Run greedy algorithm &nbsp;→</button>
+  </section>
+
+  <section class="right hide" id="res">
+    <div class="stats" id="stats"></div>
+    <div class="card">
+      <div class="row between"><h2>Time slots</h2><span class="legend">■ filled &nbsp; □ free</span></div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="note"><i>i</i><div><b>Latest-free-slot rule</b><span>Each job takes the latest free slot on or before its deadline, keeping early slots open for tighter deadlines.</span></div></div>
+    <div class="sec">Execution order</div>
+    <div id="order" style="display:grid;gap:8px"></div>
+    <div class="sec">Step by step</div>
+    <div class="card" style="gap:12px"><b style="font-size:13px;font-weight:600">1 · Sort by profit (high → low)</b><div class="chips" id="sorted"></div></div>
+    <div id="steps" style="display:grid;gap:14px"></div>
+    <div class="total"><span>Total profit</span><b id="total">0</b></div>
+  </section>
+</main>
+
 <script>
-let jobs=[];
-const $=id=>document.getElementById(id);
-function show(){
-  $('tbl').innerHTML='<tr><th>ID</th><th>Deadline</th><th>Profit</th></tr>'+
-    jobs.map(j=>`<tr><td>${j.id}</td><td>${j.dl}</td><td>${j.pf}</td></tr>`).join('');
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let jobs = [{id:'Vinay',d:10,p:100},{id:'Pawan',d:8,p:80},{id:'Praveen',d:7,p:110}];
+const SAMPLE = [{id:'A',d:2,p:100},{id:'B',d:1,p:19},{id:'C',d:2,p:27},{id:'D',d:1,p:25},{id:'E',d:3,p:15}];
+
+function renderJobs(){
+  $('#count').textContent = jobs.length + (jobs.length === 1 ? ' job' : ' jobs');
+  $('#list').innerHTML = jobs.length ? jobs.map((j,i) =>
+    `<div class="job"><div class="av">${esc(j.id[0].toUpperCase())}</div>
+     <div class="info"><b>${esc(j.id)}</b><span>Deadline ${j.d} &nbsp;·&nbsp; Profit ${j.p}</span></div>
+     <span class="pill">+${j.p}</span><button class="x" data-i="${i}" aria-label="Remove ${esc(j.id)}">✕</button></div>`).join('')
+    : '<div class="empty">No jobs yet. Add one or load the sample.</div>';
 }
-function addJob(){
-  const id=$('jid').value.trim(), dl=parseInt($('jdl').value), pf=parseInt($('jpf').value);
-  if(!id||!(dl>=1)||isNaN(pf)) return alert('Enter valid ID, deadline (>=1) and profit');
-  jobs.push({id,dl,pf});
-  $('jid').value=$('jdl').value=$('jpf').value='';
-  show();
+function reset(){ $('#res').classList.add('hide'); renderJobs(); }
+
+function schedule(){
+  const maxD = Math.max(...jobs.map(j => j.d));
+  const slots = Array(maxD + 1).fill(null);
+  const sorted = [...jobs].sort((a,b) => b.p - a.p);
+  const steps = []; let total = 0;
+  sorted.forEach(j => {
+    let s = 0;
+    for (let t = Math.min(j.d, maxD); t >= 1; t--) if (!slots[t]) { s = t; break; }
+    if (s) { slots[s] = j; total += j.p; }
+    steps.push({ j, s, snap: slots.map(Boolean) });
+  });
+  return { maxD, slots, sorted, steps, total };
 }
-function sample(){
-  jobs=[{id:'J1',dl:2,pf:100},{id:'J2',dl:1,pf:19},{id:'J3',dl:2,pf:27},{id:'J4',dl:1,pf:25},{id:'J5',dl:3,pf:15}];
-  show();
-}
+
 function run(){
-  if(!jobs.length) return alert('Add some jobs first');
-  const sorted=[...jobs].sort((a,b)=>b.pf-a.pf);
-  const maxD=Math.max(...jobs.map(j=>j.dl));
-  const slot=Array(maxD+1).fill(null);
-  let total=0;
-  const log=['Sorted by profit: '+sorted.map(j=>j.id).join(', ')];
-  for(const j of sorted){
-    let placed=false;
-    for(let t=Math.min(maxD,j.dl);t>=1;t--){
-      if(!slot[t]){
-        slot[t]=j; total+=j.pf; placed=true;
-        log.push(`✅ ${j.id} (profit ${j.pf}, deadline ${j.dl}) → slot ${t}`);
-        break;
-      }
-    }
-    if(!placed) log.push(`❌ ${j.id} (profit ${j.pf}) rejected: no free slot up to ${j.dl}`);
-  }
-  let html='';
-  for(let t=1;t<=maxD;t++){
-    html+=`<div class="slot ${slot[t]?'filled':''}">Slot ${t}<br><b>${slot[t]?slot[t].id:'-'}</b></div>`;
-  }
-  $('slots').innerHTML=html;
-  $('sum').innerHTML=`<b>Total profit: ${total}</b>`;
-  $('log').innerHTML=log.join('<br>');
-  $('out').style.display='block';
+  if (!jobs.length) { $('#err').textContent = 'Add at least one job first.'; return; }
+  const r = schedule(), placed = r.slots.filter(Boolean);
+  $('#stats').innerHTML =
+    `<div class="stat"><small>Total profit</small><b style="color:var(--ok)">${r.total}</b></div>
+     <div class="stat"><small>Scheduled</small><b>${placed.length} / ${jobs.length}</b></div>
+     <div class="stat"><small>Slots</small><b>${r.maxD}</b></div>`;
+  $('#grid').innerHTML = Array.from({length:r.maxD}, (_,k) => {
+    const j = r.slots[k+1];
+    return `<div class="slot ${j?'on':''}" style="animation-delay:${k*30}ms"><small>Slot ${k+1}</small><b>${j?esc(j.id):'–'}</b></div>`;
+  }).join('');
+  $('#order').innerHTML = r.slots.map((j,t) => j ?
+    `<div class="ord"><em>Slot ${t}</em><b>${esc(j.id)}</b><strong>+${j.p}</strong></div>` : '').join('');
+  $('#sorted').innerHTML = r.sorted.map(j => `<span class="chip">${esc(j.id)} <b>${j.p}</b></span>`).join('');
+  $('#steps').innerHTML = r.steps.map(({j,s,snap}, k) => {
+    const strip = Array.from({length:r.maxD}, (_,i) => {
+      const n = i + 1, cls = n === s ? 'now' : snap[n] ? 'was' : '';
+      return `<s class="${cls}">${n}</s>`;
+    }).join('');
+    return s
+      ? `<div class="step" style="animation-delay:${k*80}ms"><div class="badge">✓</div><div><b>${esc(j.id)} → slot ${s}</b><p>Profit ${j.p} · Deadline ${j.d} · slot ${s} was free</p><div class="strip">${strip}</div></div></div>`
+      : `<div class="step skip" style="animation-delay:${k*80}ms"><div class="badge">✕</div><div><b>${esc(j.id)} → skipped</b><p>Profit ${j.p} · Deadline ${j.d} · no free slot on or before the deadline</p><div class="strip">${strip}</div></div></div>`;
+  }).join('');
+  $('#total').textContent = r.total;
+  $('#err').textContent = '';
+  $('#res').classList.remove('hide');
+  if (matchMedia('(max-width:919px)').matches) $('#res').scrollIntoView({behavior:'smooth', block:'start'});
 }
+
+function addJob(){
+  const id = $('#fid').value.trim(), d = parseInt($('#fd').value, 10), p = parseInt($('#fp').value, 10);
+  if (!id) return $('#err').textContent = 'Enter a job ID.';
+  if (!(d >= 1 && d <= 30)) return $('#err').textContent = 'Deadline must be between 1 and 30.';
+  if (!(p >= 0)) return $('#err').textContent = 'Enter a valid profit.';
+  if (jobs.some(j => j.id.toLowerCase() === id.toLowerCase())) return $('#err').textContent = 'That ID already exists.';
+  jobs.push({id, d, p});
+  ['#fid','#fd','#fp'].forEach(s => $(s).value = '');
+  $('#err').textContent = ''; $('#fid').focus(); reset();
+}
+
+$('#add').onclick = addJob;
+$('#run').onclick = run;
+$('#sample').onclick = () => { jobs = SAMPLE.map(j => ({...j})); $('#err').textContent = ''; reset(); };
+$('#clear').onclick = () => { jobs = []; reset(); };
+$('#list').onclick = e => { const b = e.target.closest('.x'); if (b) { jobs.splice(+b.dataset.i, 1); reset(); } };
+['#fid','#fd','#fp'].forEach(s => $(s).addEventListener('keydown', e => { if (e.key === 'Enter') addJob(); }));
+renderJobs();
 </script>
 </body>
 </html>
+
